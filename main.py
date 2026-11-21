@@ -116,7 +116,7 @@ def make_scatter_trend(df, x_col, y_col, title, xlabel, ylabel, key):
     """산점도 + np.polyfit 추세선 + 상관계수 r 반환 (고유 key 전달)"""
     sub = df[[x_col, y_col]].dropna()
     if len(sub) < 2:
-        return None, key
+        return None, key, None
     x = sub[x_col].values
     y = sub[y_col].values
     r = float(np.corrcoef(x, y)[0, 1])
@@ -148,7 +148,7 @@ def make_scatter_trend(df, x_col, y_col, title, xlabel, ylabel, key):
         margin=dict(l=40, r=20, t=45, b=35),
         height=320,
     )
-    return fig, key
+    return fig, key, r
 
 
 @st.cache_data
@@ -363,8 +363,9 @@ with tab3:
 
             # ----- 산점도: 지상부 길이 vs 생중량 -----
             st.header("🔗 지상부 길이 vs 생중량")
+            r_shoot = None
             if has_shoot and has_fresh:
-                fig, key = make_scatter_trend(
+                fig, key, r_shoot = make_scatter_trend(
                     growth_df,
                     "지상부 길이", "생중량",
                     "지상부 길이 vs 생중량",
@@ -374,15 +375,16 @@ with tab3:
                 )
                 if fig is not None:
                     st.plotly_chart(fig, width="stretch", key=key)
-                    if r_shoot > 0.7:
-                        strength = "강한 양의 상관관계"
-                    elif r_shoot > 0.3:
-                        strength = "보통 상관관계"
-                    else:
-                        strength = "약한 상관관계"
-                    st.caption(
-                        f"상관계수 r = {r_shoot:.3f}  —  {strength}"
-                    )
+                    if r_shoot is not None:
+                        if r_shoot > 0.7:
+                            strength = "강한 양의 상관관계"
+                        elif r_shoot > 0.3:
+                            strength = "보통 상관관계"
+                        else:
+                            strength = "약한 상관관계"
+                        st.caption(
+                            f"상관계수 r = {r_shoot:.3f}  —  {strength}"
+                        )
                 else:
                     st.info("데이터가 2개 미만이라 산점도를 그릴 수 없어요.")
             else:
@@ -390,8 +392,9 @@ with tab3:
 
             # ----- 산점도: 지하부 길이 vs 생중량 -----
             st.header("🔗 지하부 길이 vs 생중량")
+            r_root = None
             if has_root and has_fresh:
-                fig, key = make_scatter_trend(
+                fig, key, r_root = make_scatter_trend(
                     growth_df,
                     "지하부 길이", "생중량",
                     "지하부 길이 vs 생중량",
@@ -401,15 +404,16 @@ with tab3:
                 )
                 if fig is not None:
                     st.plotly_chart(fig, width="stretch", key=key)
-                    if r_root > 0.7:
-                        strength = "강한 양의 상관관계"
-                    elif r_root > 0.3:
-                        strength = "보통 상관관계"
-                    else:
-                        strength = "약한 상관관계"
-                    st.caption(
-                        f"상관계수 r = {r_root:.3f}  —  {strength}"
-                    )
+                    if r_root is not None:
+                        if r_root > 0.7:
+                            strength = "강한 양의 상관관계"
+                        elif r_root > 0.3:
+                            strength = "보통 상관관계"
+                        else:
+                            strength = "약한 상관관계"
+                        st.caption(
+                            f"상관계수 r = {r_root:.3f}  —  {strength}"
+                        )
                 else:
                     st.info("데이터가 2개 미만이라 산점도를 그릴 수 없어요.")
             else:
@@ -417,32 +421,32 @@ with tab3:
 
             # ----- 상관관계 비교 -----
             if has_shoot and has_root and has_fresh:
-                r_shoot = compute_growth_correlation(
+                r_shoot_cmp = compute_growth_correlation(
                     growth_df, "지상부 길이", "생중량"
                 )
-                r_root = compute_growth_correlation(
+                r_root_cmp = compute_growth_correlation(
                     growth_df, "지하부 길이", "생중량"
                 )
-                if r_shoot is not None and r_root is not None:
+                if r_shoot_cmp is not None and r_root_cmp is not None:
                     st.header("📈 상관관계 비교")
-                    if abs(r_root) > abs(r_shoot):
+                    if abs(r_root_cmp) > abs(r_shoot_cmp):
                         st.success(
-                            f"✅ 지하부 길이(r = {r_root:.3f})가 "
-                            f"지상부 길이(r = {r_shoot:.3f})보다 "
+                            f"✅ 지하부 길이(r = {r_root_cmp:.3f})가 "
+                            f"지상부 길이(r = {r_shoot_cmp:.3f})보다 "
                             f"생중량과 더 강한 상관관계를 보여요. "
                             f"→ **지하부의 길이가 생중량에 더 큰 영향을 미친다**는 "
                             f"가설을 지지해요."
                         )
-                    elif abs(r_shoot) > abs(r_root):
+                    elif abs(r_shoot_cmp) > abs(r_root_cmp):
                         st.info(
-                            f"지상부 길이(r = {r_shoot:.3f})가 "
-                            f"지하부 길이(r = {r_root:.3f})보다 "
+                            f"지상부 길이(r = {r_shoot_cmp:.3f})가 "
+                            f"지하부 길이(r = {r_root_cmp:.3f})보다 "
                             f"생중량과 더 강한 상관관계를 보여요."
                         )
                     else:
                         st.info(
-                            f"지상부 길이(r = {r_shoot:.3f})와 "
-                            f"지하부 길이(r = {r_root:.3f})가 "
+                            f"지상부 길이(r = {r_shoot_cmp:.3f})와 "
+                            f"지하부 길이(r = {r_root_cmp:.3f})가 "
                             f"비슷한 수준의 상관관계를 보여요."
                         )
     except Exception as e:
