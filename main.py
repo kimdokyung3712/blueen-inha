@@ -86,11 +86,11 @@ def get_school_name(filename):
     return name
 
 
-def make_histogram(series, title, xlabel):
-    """히스토그램 생성"""
+def make_histogram(series, title, xlabel, key):
+    """히스토그램 생성 (고유 key 전달)"""
     vals = series.dropna()
     if len(vals) < 1:
-        return None
+        return None, key
     fig = go.Figure()
     fig.add_trace(go.Histogram(
         x=vals.tolist(),
@@ -109,14 +109,14 @@ def make_histogram(series, title, xlabel):
         margin=dict(l=40, r=20, t=45, b=35),
         height=250,
     )
-    return fig
+    return fig, key
 
 
-def make_scatter_trend(df, x_col, y_col, title, xlabel, ylabel):
-    """산점도 + np.polyfit 추세선 + 상관계수 r 반환"""
+def make_scatter_trend(df, x_col, y_col, title, xlabel, ylabel, key):
+    """산점도 + np.polyfit 추세선 + 상관계수 r 반환 (고유 key 전달)"""
     sub = df[[x_col, y_col]].dropna()
     if len(sub) < 2:
-        return None, None
+        return None, key
     x = sub[x_col].values
     y = sub[y_col].values
     r = float(np.corrcoef(x, y)[0, 1])
@@ -148,7 +148,7 @@ def make_scatter_trend(df, x_col, y_col, title, xlabel, ylabel):
         margin=dict(l=40, r=20, t=45, b=35),
         height=320,
     )
-    return fig, r
+    return fig, key
 
 
 @st.cache_data
@@ -248,7 +248,7 @@ with tab1:
             """
 **질문 1.** 지하부의 길이가 길수록 생중량이 클까?
 
-**질문 2.** 지상부의 길이가 길을수록 생중량이 클까?
+**질문 2.** 지상부의 길이가 길수록 생중량이 클까?
 
 **질문 3.** 지상부보다 지하부의 길이가 생중량에 더 큰 영향을 미칠까?
             """
@@ -314,22 +314,22 @@ with tab3:
             c1, c2 = st.columns(2)
             with c1:
                 if has_fresh:
-                    fig = make_histogram(
-                        growth_df["생중량"], "생중량 분포", "생중량 (g)"
+                    fig, key = make_histogram(
+                        growth_df["생중량"], "생중량 분포", "생중량 (g)", "hist_fresh_1"
                     )
                     if fig is not None:
-                        st.plotly_chart(fig, width="stretch")
+                        st.plotly_chart(fig, width="stretch", key=key)
                     else:
                         st.info("생중량 데이터가 부족해요.")
                 else:
                     st.info("생중량 열이 없어요.")
             with c2:
                 if has_shoot:
-                    fig = make_histogram(
-                        growth_df["지상부 길이"], "지상부 길이 분포", "지상부 길이 (mm)"
+                    fig, key = make_histogram(
+                        growth_df["지상부 길이"], "지상부 길이 분포", "지상부 길이 (mm)", "hist_shoot_1"
                     )
                     if fig is not None:
-                        st.plotly_chart(fig, width="stretch")
+                        st.plotly_chart(fig, width="stretch", key=key)
                     else:
                         st.info("지상부 길이 데이터가 부족해요.")
                 else:
@@ -340,22 +340,22 @@ with tab3:
             c3, c4 = st.columns(2)
             with c3:
                 if has_fresh:
-                    fig = make_histogram(
-                        growth_df["생중량"], "생중량 분포", "생중량 (g)"
+                    fig, key = make_histogram(
+                        growth_df["생중량"], "생중량 분포", "생중량 (g)", "hist_fresh_2"
                     )
                     if fig is not None:
-                        st.plotly_chart(fig, width="stretch")
+                        st.plotly_chart(fig, width="stretch", key=key)
                     else:
                         st.info("생중량 데이터가 부족해요.")
                 else:
                     st.info("생중량 열이 없어요.")
             with c4:
                 if has_root:
-                    fig = make_histogram(
-                        growth_df["지하부 길이"], "지하부 길이 분포", "지하부 길이 (mm)"
+                    fig, key = make_histogram(
+                        growth_df["지하부 길이"], "지하부 길이 분포", "지하부 길이 (mm)", "hist_root_1"
                     )
                     if fig is not None:
-                        st.plotly_chart(fig, width="stretch")
+                        st.plotly_chart(fig, width="stretch", key=key)
                     else:
                         st.info("지하부 길이 데이터가 부족해요.")
                 else:
@@ -364,15 +364,16 @@ with tab3:
             # ----- 산점도: 지상부 길이 vs 생중량 -----
             st.header("🔗 지상부 길이 vs 생중량")
             if has_shoot and has_fresh:
-                fig, r_shoot = make_scatter_trend(
+                fig, key = make_scatter_trend(
                     growth_df,
                     "지상부 길이", "생중량",
                     "지상부 길이 vs 생중량",
                     "지상부 길이 (mm)",
                     "생중량 (g)",
+                    "scatter_shoot",
                 )
                 if fig is not None:
-                    st.plotly_chart(fig, width="stretch")
+                    st.plotly_chart(fig, width="stretch", key=key)
                     if r_shoot > 0.7:
                         strength = "강한 양의 상관관계"
                     elif r_shoot > 0.3:
@@ -390,15 +391,16 @@ with tab3:
             # ----- 산점도: 지하부 길이 vs 생중량 -----
             st.header("🔗 지하부 길이 vs 생중량")
             if has_root and has_fresh:
-                fig, r_root = make_scatter_trend(
+                fig, key = make_scatter_trend(
                     growth_df,
                     "지하부 길이", "생중량",
                     "지하부 길이 vs 생중량",
                     "지하부 길이 (mm)",
                     "생중량 (g)",
+                    "scatter_root",
                 )
                 if fig is not None:
-                    st.plotly_chart(fig, width="stretch")
+                    st.plotly_chart(fig, width="stretch", key=key)
                     if r_root > 0.7:
                         strength = "강한 양의 상관관계"
                     elif r_root > 0.3:
